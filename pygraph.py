@@ -1,67 +1,76 @@
-from tkinter import Button, Label, Tk, Canvas, Toplevel
-from tkinter.simpledialog import askstring, askinteger
+from tkinter import (
+    END,
+    Button,
+    Entry,
+    Label,
+    Tk,
+    Spinbox,
+)
 from math import sin, cos, pi
+from PIL import Image, ImageDraw
 
 
-def Graph(expr: str, order: int = 0, canvassize: int = 0):
-    if not canvassize:
-        canvassize = 1000
+def Graph(save: bool, expr: str, order: int, size: int):
     if not order:
-        order = 500
+        order = 6
+    if not size:
+        size = 1000
+
+    im = Image.new("1", (size + 1,) * 2, 1)
+    draw = ImageDraw.Draw(im)
 
     def link(a: int, b: int):
-        can.create_line(points[a][0], points[a][1], points[b][0], points[b][1])
+        draw.line(points[a] + points[b], fill=0)
 
     points = [
         (
-            (canvassize / 2) * sin(2 * pi * i / order) + canvassize / 2 + 5,
-            (canvassize / 2) * cos(2 * pi * i / order) + canvassize / 2 + 5,
+            int((size / 2) * sin(2 * pi * i / order) + size / 2),
+            int((size / 2) * cos(2 * pi * i / order) + size / 2),
         )
         for i in range(order)
     ]
-    w = Toplevel()
-    w.title("(a,b) in V if " + expr)
-    can = Canvas(w, width=canvassize + 10, height=canvassize + 10)
-    can.pack()
     result = a = b = None
     for a in range(order):
-        can.create_rectangle(
-            (
-                (canvassize / 2) * sin(2 * pi * a / order) + canvassize / 2 + 5,
-                (canvassize / 2) * cos(2 * pi * a / order) + canvassize / 2 + 5,
-            )
-            * 2
-        )
+        try:
+            im.putpixel(points[a], 0)
+        except IndexError as e:
+            print(f"{e}: {points[a]}/{im.size}")
         for b in range(order):
             result = eval(expr)
             if result:
                 link(a, b)
+    if save:
+        im.save("output.bmp")
+    im.show()
 
 
-if __name__ == "__main__":
+def save():
+    Graph(True, eExp.get(), int(eOrder.get()), int(eSize.get()))
 
-    def showexamples():
-        for expr in ["(a+1) % (b+1) == 0", "a==b*2", "a==b**2"]:
-            Graph(expr)
 
-    w = Tk()
-    w.resizable(False, False)
-    w.title("Expression defined graph generator")
-    lb = Label(w, text="Welcome to my graph generator!\nPlease choose an option:")
-    ex = Button(w, text="See examples", command=showexamples)
-    us = Button(
-        w,
-        text="Enter expression",
-        command=lambda: Graph(
-            askstring(
-                "Expression input",
-                "Enter boolean expression using (a,b) as the two points (from 0):",
-                initialvalue="a==b*2",
-            ),
-            askinteger("Order input", "Enter the number of points:", initialvalue=500),
-        ),
-    )
-    lb.pack(padx=2)
-    ex.pack(side="left")
-    us.pack()
-    w.mainloop()
+def show():
+    Graph(False, eExp.get(), int(eOrder.get()), int(eSize.get()))
+
+
+initialexpr = "(a+1)%(b+1)==0"
+w = Tk()
+lExp = Label(w, text="Expression:")
+eExp = Entry(w)
+eExp.insert(END, initialexpr)
+lOrder = Label(w, text="Order:")
+eOrder = Spinbox(w, from_=1, to=10000)
+eOrder.insert(0, "1")
+lSize = Label(w, text="Size:")
+eSize = Spinbox(w, from_=2, to=10000)
+eSize.insert(0, "100")
+bShow = Button(w, text="Show", command=show)
+bSave = Button(w, text="Save", command=save)
+lExp.grid(column=1, row=1)
+lOrder.grid(column=1, row=2)
+lSize.grid(column=1, row=3)
+bShow.grid(column=1, row=4)
+bSave.grid(column=2, row=4)
+eExp.grid(column=2, row=1)
+eOrder.grid(column=2, row=2)
+eSize.grid(column=2, row=3)
+w.mainloop()
